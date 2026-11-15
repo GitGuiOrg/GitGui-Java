@@ -55,6 +55,9 @@
 .PARAMETER Yes
     Does not ask for confirmation before publishing.
 
+.PARAMETER RequireCi
+    Stops when CI on the commit is missing, running or failed (by default this only prints a warning).
+
 .PARAMETER DryRun
     Builds and checks everything but does not create the tag or the release.
 
@@ -77,6 +80,7 @@ param(
     [switch]$SkipTests,
     [string]$MavenPath,
     [switch]$Yes,
+    [switch]$RequireCi,
     [switch]$DryRun
 )
 
@@ -129,6 +133,14 @@ function Invoke-GitAs([string[]]$GitArgs) {
     & git -C $ProjectDir -c credential.helper= -c 'credential.helper=!gh auth git-credential' @GitArgs
 }
 
+# ---------------------------------------------------------------- toolchain
+
+# Fail fast: a missing JDK or Maven should stop the release before anything is edited.
+$null = Initialize-Toolchain -MavenPath $MavenPath
+if (-not (Test-Path -LiteralPath (Join-Path $env:JAVA_HOME 'bin\jpackage.exe'))) {
+    Stop-Release "jpackage not found in $env:JAVA_HOME: a full JDK is required, not a JRE."
+}
+
 # ---------------------------------------------------------------- repository
 
 Push-Location $ProjectDir
@@ -152,12 +164,23 @@ try {
         Stop-Release "main is not in sync with $Repo (local $($head.Substring(0, 7)), remote $($remoteMain.Substring(0, 7))). Push or pull it first."
     }
 
-    # A failing CI on this commit is worth knowing about before releasing it (a warning, not a stop).
+    # CI on this commit: a warning by default, a stop with -RequireCi.
     $runs = $null
-    try { $runs = & gh run list --repo $Repo --commit $head --limit 5 --json status,conclusion 2>$null | ConvertFrom-Json } catch { }
-    if (-not $runs) { Write-Warn 'No CI run found for this commit.' }
-    elseif ($runs | Where-Object { $_.conclusion -in @('failure', 'cancelled', 'timed_out') }) { Write-Warn 'CI failed on this commit.' }
-    elseif ($runs | Where-Object { $_.status -ne 'completed' }) { Write-Warn 'CI is still running on this commit.' }
+    try { $runs = @(& gh run list --repo $Repo --commit $head --limit 5 --json status,conclusion 2>$null | ConvertFrom-Json) } catch { }
+    $ciProblem = $null
+    if (-not $runs) { $ciProblem = 'No CI run found for this commit.' }
+    elseif ($runs | Where-Object { $_.conclusion -in @('failure', 'cancelled', 'timed_out') }) { $ciProblem = 'CI failed on this commit.' }
+    elseif ($runs | Where-Object { $_.status -ne 'completed' }) { $ciProblem = 'CI is still running on this commit.' }
+    if ($ciProblem) {
+        if ($RequireCi) { Stop-Release "$ciProblem Wait for a green CI, or drop -RequireCi." }
+        Write-Warn $ciProblem
+    }
+
+    # The commit and the tag are created by this script: fail now, not after the build, if that cannot work.
+    if (-not (& git config user.name) -or -not (& git config user.email)) {
+        Stop-Release 'git user.name / user.email are not configured: the release commit would fail.'
+    }
+    $script:RemoteTags = @((Invoke-GitAs @('ls-remote', '--tags', "https://github.com/$Repo.git", 'refs/tags/v*') | Out-String) -split "\r?\n")
 } finally {
     Pop-Location
 }
@@ -182,6 +205,7 @@ switch ($Bump) {
 $version = if ($Bump -eq 'none') { $currentVersion } else { "$major.$minor.$patch" }
 $tag = "v$version"
 
+if ($script:RemoteTags | Where-Object { $_ -match "\srefs/tags/$([regex]::Escape($tag))(\^\{\})?$" }) { Stop-Release "The tag $tag already exists in $Repo." }
 if (Test-Native { gh release view $tag --repo $Repo }) { Stop-Release "A release for $tag already exists in $Repo." }
 if (& git -C $ProjectDir tag --list $tag) { Stop-Release "The tag $tag already exists locally." }
 Write-Info "Version $currentVersion -> $version (tag $tag)"
