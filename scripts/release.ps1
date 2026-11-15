@@ -113,16 +113,21 @@ if (-not $GitHubUser) { $GitHubUser = $env:GITGUI_GH_USER }
 if (-not (Test-Native { gh auth status --hostname github.com })) {
     Stop-Release 'gh is not signed in to github.com. Run: gh auth login'
 }
-if ($GitHubUser) {
+$activeUser = Invoke-Gh @('api', 'user', '--jq', '.login')
+if ($GitHubUser -and $activeUser -ne $GitHubUser) {
+    # Only switch when needed: "gh auth switch" fails when the account is already the active one.
     if (-not (Test-Native { gh auth switch --hostname github.com --user $GitHubUser })) {
         Stop-Release "Could not switch gh to '$GitHubUser'. Sign in with that account first: gh auth login"
     }
-}
-$activeUser = Invoke-Gh @('api', 'user', '--jq', '.login')
-if ($GitHubUser -and $activeUser -ne $GitHubUser) {
-    Stop-Release "gh is using '$activeUser' instead of '$GitHubUser'."
+    $activeUser = Invoke-Gh @('api', 'user', '--jq', '.login')
+    if ($activeUser -ne $GitHubUser) { Stop-Release "gh is using '$activeUser' instead of '$GitHubUser'." }
 }
 Write-Info "GitHub account: $activeUser"
+
+# git authenticates with the gh account chosen above, whatever login the origin remote URL carries.
+function Invoke-GitAs([string[]]$GitArgs) {
+    & git -C $ProjectDir -c credential.helper= -c 'credential.helper=!gh auth git-credential' @GitArgs
+}
 
 # ---------------------------------------------------------------- repository
 
@@ -141,8 +146,18 @@ try {
     if (& git status --porcelain) { Stop-Release 'The working tree has uncommitted changes. Commit or discard them first.' }
 
     $head = (& git rev-parse HEAD | Out-String).Trim()
-    $remoteMain = ((& git ls-remote origin refs/heads/main | Out-String).Trim() -split '\s+')[0]
-    if ($remoteMain -ne $head) { Stop-Release 'main is not pushed: origin/main differs from the local main. Push it first.' }
+    $remoteMain = ((Invoke-GitAs @('ls-remote', "https://github.com/$Repo.git", 'refs/heads/main') | Out-String).Trim() -split '\s+')[0]
+    if ($LASTEXITCODE -ne 0 -or -not $remoteMain) { Stop-Release "Could not read main from $Repo (no access, or the repository does not exist)." }
+    if ($remoteMain -ne $head) {
+        Stop-Release "main is not in sync with $Repo (local $($head.Substring(0, 7)), remote $($remoteMain.Substring(0, 7))). Push or pull it first."
+    }
+
+    # A failing CI on this commit is worth knowing about before releasing it (a warning, not a stop).
+    $runs = $null
+    try { $runs = & gh run list --repo $Repo --commit $head --limit 5 --json status,conclusion 2>$null | ConvertFrom-Json } catch { }
+    if (-not $runs) { Write-Warn 'No CI run found for this commit.' }
+    elseif ($runs | Where-Object { $_.conclusion -in @('failure', 'cancelled', 'timed_out') }) { Write-Warn 'CI failed on this commit.' }
+    elseif ($runs | Where-Object { $_.status -ne 'completed' }) { Write-Warn 'CI is still running on this commit.' }
 } finally {
     Pop-Location
 }
@@ -150,8 +165,9 @@ try {
 # ---------------------------------------------------------------- version and tag
 
 $pomPath = Join-Path $ProjectDir 'pom.xml'
-$pomText = [IO.File]::ReadAllText($pomPath)
-$pomBom = ([IO.File]::ReadAllBytes($pomPath) | Select-Object -First 3) -join ',' -eq '239,187,191'
+$pomBytes = [IO.File]::ReadAllBytes($pomPath)
+$pomBom = ($pomBytes.Length -ge 3 -and $pomBytes[0] -eq 0xEF -and $pomBytes[1] -eq 0xBB -and $pomBytes[2] -eq 0xBF)
+$pomText = [IO.File]::ReadAllText($pomPath)   # strips the BOM; it is written back below when there was one
 $versionPattern = '(<artifactId>gitgui</artifactId>\s*<version>)([^<]+)(</version>)'
 if ($pomText -notmatch $versionPattern) { Stop-Release 'Could not find the project <version> in pom.xml.' }
 $currentVersion = $Matches[2]
@@ -175,15 +191,16 @@ function Restore-Pom {
     & git -C $ProjectDir checkout -- pom.xml
 }
 
-if ($Bump -ne 'none') {
-    $newText = [regex]::Replace($pomText, $versionPattern, { param($m) $m.Groups[1].Value + $version + $m.Groups[3].Value }, 'None')
-    [IO.File]::WriteAllText($pomPath, $newText, (New-Object System.Text.UTF8Encoding($pomBom)))
-}
-
 # ---------------------------------------------------------------- build
 
 $committed = $false
 try {
+    if ($Bump -ne 'none') {
+        $newText = [regex]::Replace($pomText, $versionPattern, ('${1}' + $version + '${3}'))
+        [IO.File]::WriteAllText($pomPath, $newText, (New-Object System.Text.UTF8Encoding($pomBom)))
+        Write-Step "pom.xml: $currentVersion -> $version"
+    }
+
     $package = Join-Path $PSScriptRoot 'package.ps1'
     $pkgArgs = @{}
     if ($SkipTests) { $pkgArgs.SkipTests = $true }
@@ -206,7 +223,9 @@ try {
     $zip = Join-Path $dist "GitGui-$version-windows.zip"
     if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
     Write-Step "Compressing the app image to $zip"
-    Compress-Archive -LiteralPath (Join-Path $dist 'GitGui') -DestinationPath $zip
+    # ZipFile (not Compress-Archive): it handles big files and writes portable entry names.
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::CreateFromDirectory((Join-Path $dist 'GitGui'), $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
     $assets.Add($zip)
 
     if ($Msi) {
@@ -245,13 +264,12 @@ try {
         $committed = $true
     }
     $head = (& git -C $ProjectDir rev-parse HEAD | Out-String).Trim()
-    # Pushing to the explicit URL with gh as credential helper makes git use the active gh account,
-    # whatever login the origin remote URL carries.
-    & git -C $ProjectDir -c credential.helper= -c 'credential.helper=!gh auth git-credential' push "https://github.com/$Repo.git" main:main
+    # Pushing to the explicit URL (not "origin") so the gh account chosen above is the one used.
+    Invoke-GitAs @('push', "https://github.com/$Repo.git", 'main:main')
     if ($LASTEXITCODE -ne 0) {
         Stop-Release "git push failed. The bump commit stays local on main; fix the access problem and push it, then re-run with -Bump none."
     }
-    & git -C $ProjectDir fetch origin main *> $null
+    Test-Native { git -C $ProjectDir fetch origin main } | Out-Null   # refresh origin/main locally
 
     $ghArgs = @('release', 'create', $tag, '--repo', $Repo, '--target', $head, '--title', "GitGui $version")
     if ($Notes) { $ghArgs += @('--notes', $Notes) } else { $ghArgs += '--generate-notes' }
@@ -259,7 +277,13 @@ try {
     if ($Prerelease) { $ghArgs += '--prerelease' }
     $ghArgs += $assets
 
-    $url = Invoke-Gh $ghArgs
+    $created = $false
+    try {
+        $url = Invoke-Gh $ghArgs
+        $created = $true
+    } finally {
+        if (-not $created) { Write-Warn "The release was not created, but main is already pushed. Retry with: .\scripts\release.ps1 -Bump none" }
+    }
     Write-Info "Release created: $url"
 } finally {
     # Anything that ends before the bump commit (build failure, dry run, cancel) leaves pom.xml as committed.
