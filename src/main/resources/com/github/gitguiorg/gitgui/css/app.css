@@ -1,0 +1,193 @@
+/* ============================================================
+   UI theme inspired by GitButler: layered dark surfaces,
+   thin borders, rounded corners, purple/indigo accent.
+   ============================================================ */
+
+/* ---- Color palette (reused throughout the theme) ---- */
+/*  - main bg:              #0d1117
+   - card surface:       #161b22 / transparent rgba
+   - border:                rgba(99,102,241,0.25)  (indigo)
+   - main accent:    #8b5cf6 (purple) / #6366f1 (indigo)
+   - primary text:        #e6edf3
+   - secondary text:      #8b949e
+   - addition:             #3fb950 (green)
+   - removal:             #f85149 (red)
+*/
+
+.diff-area { -fx-background-color: #0d1117; -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 12px; }
+.diff-area .text { -fx-fill: #c9d1d9; }
+.diff-area .paragraph-graphic { -fx-background-color: #0d1117; }
+.diff-area .text.diff-add { -fx-fill: #3fb950; -rtfx-background-color: rgba(63,185,80,0.22); }
+.diff-area .text.diff-del { -fx-fill: #f85149; -rtfx-background-color: rgba(248,81,73,0.22); }
+.diff-area .text.diff-word { -rtfx-background-color: rgba(210,153,34,0.55); }
+.diff-area .text.diff-hunk { -fx-fill: #8b5cf6; -rtfx-background-color: rgba(139,92,246,0.15); }
+.diff-area .text.diff-file { -fx-fill: #e6edf3; -fx-font-weight: bold; }
+.diff-area .text.diff-meta { -fx-fill: #8b949e; }
+.diff-area .text.diff-ctx { -fx-fill: #c9d1d9; }
+.diff-area .text.conf-line { -rtfx-background-color: rgba(210,153,34,0.28); }
+.diff-area .text.plain-line { -fx-fill: #c9d1d9; }
+.diff-area .text.res-marker { -fx-fill: #d29922; -fx-font-weight: bold; -rtfx-background-color: rgba(210,153,34,0.18); }
+.diff-area .text.res-ours { -fx-fill: #3fb950; -rtfx-background-color: rgba(63,185,80,0.18); }
+.diff-area .text.res-theirs { -fx-fill: #8b5cf6; -rtfx-background-color: rgba(139,92,246,0.18); }
+.diff-area .text.res-base { -fx-fill: #8b949e; -rtfx-background-color: rgba(110,118,129,0.18); }.diff-area .text.diff-pad { -fx-fill: transparent; -rtfx-background-color: rgba(110,118,129,0.10); }
+.diff-area .text.tok-kw { -fx-fill: #ff7b72; }
+.diff-area .text.tok-str { -fx-fill: #a5d6ff; }
+.diff-area .text.tok-num { -fx-fill: #8b5cf6; }
+.diff-area .text.tok-type { -fx-fill: #ffa657; }
+.diff-area .text.tok-key { -fx-fill: #d2a8ff; }
+.diff-area .text.tok-com { -fx-fill: #8b949e; -fx-font-style: italic; }
+
+/* ---- Compact chrome ---- */
+.split-pane > .split-pane-divider { -fx-padding: 0 1 0 1; }
+.split-pane:vertical > .split-pane-divider { -fx-padding: 1 0 1 0; }
+.tab-pane > .tab-header-area { -fx-padding: 0; }
+.tab-pane > .tab-header-area > .headers-region > .tab { -fx-padding: 0 2 0 2; -fx-min-height: 26; -fx-pref-height: 26; -fx-max-height: 26; -fx-background-radius: 0; }
+.tab-pane > .tab-header-area > .headers-region > .tab .tab-label { -fx-font-size: 12px; -fx-text-fill: #c9d1d9; }
+.tab-pane > .tab-content-area { -fx-padding: 0; }
+.button { -fx-padding: 4 10 4 10; -fx-background-radius: 6; -fx-cursor: hand; }
+.button:hover { -fx-opacity: 0.9; }
+.text-field, .combo-box-base { -fx-padding: 1 4 1 4; -fx-background-radius: 6; }
+.combo-box-base .text-field { -fx-padding: 1 4 1 4; }
+.check-box { -fx-padding: 0; }
+.list-cell, .tree-cell { -fx-padding: 1 6 1 6; }
+.table-row-cell .table-cell { -fx-padding: 1 6 1 6; }
+.menu-bar { -fx-padding: 0; }
+.scroll-bar:vertical { -fx-pref-width: 10; -fx-background-radius: 5; }
+.scroll-bar:horizontal { -fx-pref-height: 10; -fx-background-radius: 5; }
+.repo-tabs > .tab-header-area { -fx-padding: 0 6 0 0; }
+.repo-tabs .menu-bar { -fx-background-color: transparent; }
+
+/* ---- Global toolbar at the top ---- */
+.global-toolbar {
+    -fx-background-color: #0f141b;
+    -fx-border-color: rgba(99,102,241,0.20);
+    -fx-border-width: 0 0 1 0;
+}
+.global-toolbar .text-field { -fx-background-color: #161b22; -fx-prompt-text-fill: #6e7681; }
+.global-toolbar-status { -fx-text-fill: #8b949e; -fx-font-size: 11px; }
+.global-toolbar-sync { -fx-text-fill: #d29922; -fx-font-size: 11px; }
+.global-search-results {
+    -fx-background-color: #161b22;
+    -fx-border-color: rgba(99,102,241,0.35);
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+}
+.global-search-results .list-cell { -fx-padding: 4 8 4 8; -fx-background-color: transparent; }
+.global-search-results .list-cell:selected { -fx-background-color: rgba(139,92,246,0.22); }
+.global-search-results .list-cell:hover { -fx-background-color: rgba(139,92,246,0.12); }
+
+/* ---- Cards (layered surfaces, thin border, rounded corners) ---- */
+.card {
+    -fx-background-color: #161b22;
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(99,102,241,0.20);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-padding: 8 10 8 10;
+}
+.card:hover { -fx-border-color: rgba(139,92,246,0.45); }
+.card:focused, .card:selected { -fx-border-color: #8b5cf6; }
+
+/* Cards used in the views (GitButler, empty state, etc.) when applied via setStyle */
+.card-elevated {
+    -fx-background-color: rgba(22,27,34,0.7);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(99,102,241,0.15);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-padding: 10 12 10 12;
+}
+
+/* ---- Status pills/badges ---- */
+.pill {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e6edf3;
+    -fx-background-radius: 9;
+    -fx-padding: 1 7 1 7;
+}
+.pill.accent { -fx-background-color: rgba(139,92,246,0.18); -fx-text-fill: #8b5cf6; }
+.pill.accent:hover { -fx-background-color: rgba(139,92,246,0.30); }
+.pill.green { -fx-background-color: rgba(63,185,80,0.18); -fx-text-fill: #3fb950; }
+.pill.red { -fx-background-color: rgba(248,81,73,0.18); -fx-text-fill: #f85149; }
+.pill.amber { -fx-background-color: rgba(210,153,34,0.18); -fx-text-fill: #d29922; }
+.pill.blue { -fx-background-color: rgba(99,102,241,0.18); -fx-text-fill: #6366f1; }
+.pill.gray { -fx-background-color: rgba(110,118,129,0.18); -fx-text-fill: #8b949e; }
+
+/* ---- Selections and purple/indigo accent ---- */
+.selection-highlight {
+    -fx-background-color: rgba(139,92,246,0.20);
+    -fx-background-radius: 6;
+}
+.bt-commit:selected, .bt-commit.selected {
+    -fx-background-color: rgba(139,92,246,0.22);
+    -fx-background-radius: 6;
+}
+.stack-tag {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-padding: 0 5 0 5;
+    -fx-background-radius: 4;
+}
+
+/* ---- Loading states and empty spaces ---- */
+.empty-state {
+    -fx-alignment: center;
+    -fx-padding: 24;
+}
+.empty-state .title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #e6edf3; }
+.empty-state .subtitle { -fx-font-size: 12px; -fx-text-fill: #8b949e; -fx-wrap-text: true; }
+
+.muted { -fx-opacity: 0.65; }
+
+/* Highlights the graph rows belonging to the currently selected stack. */
+.stack-highlight {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-background-radius: 6;
+}
+
+/* ---- Micro-interactions: hover and transitions ---- */
+.card:hover {
+    -fx-border-color: rgba(139,92,246,0.55);
+}
+.pill:hover {
+    -fx-opacity: 0.9;
+}
+.bt-commit:hover {
+    -fx-background-color: rgba(139,92,246,0.35);
+}
+.stack-tag:hover {
+    -fx-opacity: 0.9;
+}
+
+/* ---- Changed files panel (right side) ---- */
+.changes-panel {
+    -fx-background-color: #0f141b;
+    -fx-border-color: rgba(99,102,241,0.20);
+    -fx-border-width: 0 1 0 0;
+}
+.changes-panel .list-cell { -fx-padding: 2 4 2 4; -fx-background-color: transparent; }
+.changes-panel .list-cell:selected { -fx-background-color: rgba(139,92,246,0.18); }
+.changes-panel .list-cell:hover { -fx-background-color: rgba(139,92,246,0.10); }
+.changes-file-path { -fx-font-size: 11px; -fx-text-fill: #c9d1d9; }
+
+/* ---- Command palette (Ctrl+K) ---- */
+.command-palette-dimmer { -fx-background-color: rgba(1,4,9,0.55); }
+.command-palette {
+    -fx-background-color: #161b22;
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(99,102,241,0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-padding: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 24, 0.2, 0, 8);
+}
+.command-palette-search { -fx-font-size: 14px; -fx-padding: 6 10 6 10; -fx-background-radius: 8; }
+.command-palette .list-cell { -fx-background-color: transparent; -fx-padding: 4 6 4 6; -fx-background-radius: 6; }
+.command-palette .list-cell:selected { -fx-background-color: rgba(139,92,246,0.22); }
+.command-palette .list-cell:hover { -fx-background-color: rgba(139,92,246,0.12); }
+.command-palette-row { -fx-alignment: center-left; }
+.command-palette-title { -fx-text-fill: #e6edf3; -fx-font-size: 13px; }
+.command-palette-shortcut { -fx-text-fill: #8b949e; -fx-font-size: 11px; }
+.command-palette-hint { -fx-text-fill: #8b949e; -fx-font-size: 11px; }

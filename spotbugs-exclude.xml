@@ -1,0 +1,18 @@
+<FindBugsFilter>
+  <!--
+    JavaFX getters deliberately return the property object so callers can bind and listen to it
+    (statusProperty(), log(), changes(), ...). SpotBugs sees that as exposing internal state.
+  -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+  <!--
+    ButClient probes the usual Unix install folders for but; these are fixed system locations,
+    not paths that depend on the machine running the analysis.
+  -->
+  <Match>
+    <Class name="com.github.gitguiorg.gitgui.git.ButClient"/>
+    <Method name="commonPaths"/>
+    <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+  </Match>
+</FindBugsFilter>
