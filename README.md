@@ -66,6 +66,18 @@ Builds the jar and, with `jpackage`, the app image `target/dist/GitGui/GitGui.ex
 `.\scripts\package.ps1 -Type msi` builds an installer instead (Start menu entry, desktop shortcut, folder chooser) and needs the WiX Toolset.
 The version and SHA-256 of the produced files are printed at the end.
 
+## Release
+
+```powershell
+.\scripts\release.ps1 -GitHubUser <login> -DryRun   # build with the bumped version, then undo everything
+.\scripts\release.ps1 -GitHubUser <login>           # bump patch, commit on main, push, create the GitHub release
+```
+
+Needs the GitHub CLI (`gh`) signed in with the chosen account. The script bumps the patch version in `pom.xml`
+(`-Bump minor|major|none` to change that) in a dedicated `Release <version>` commit on `main`, pushes `main`,
+then creates the tag and the release with the jar, the zipped app image (`-Msi` adds the installer) and `SHA256SUMS.txt`.
+It must run from a clean `main` that is already pushed, and asks for confirmation before anything leaves your machine.
+
 ## CI
 
 `.github/workflows/ci.yml` runs `mvn -B verify` with Temurin 25 on every push to `main` and on every pull

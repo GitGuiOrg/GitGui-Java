@@ -201,12 +201,18 @@ function Initialize-Toolchain {
 
 function Invoke-Maven($tc, [string[]]$MavenArgs) {
     # Runs Maven from the project folder and exits the calling script with Maven's exit code on failure.
+    # Windows PowerShell 5.1 turns anything a native tool writes to stderr (Maven/JDK warnings) into an
+    # error under 'Stop'; only the exit code matters here.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     Push-Location $ProjectDir
     try {
         Write-Step ("mvn " + ($MavenArgs -join ' '))
         & $tc.Maven.Path @MavenArgs
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $code = $LASTEXITCODE
     } finally {
         Pop-Location
+        $ErrorActionPreference = $prev
     }
+    if ($code -ne 0) { exit $code }
 }

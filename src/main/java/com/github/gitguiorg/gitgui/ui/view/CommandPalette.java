@@ -160,7 +160,7 @@ final class CommandPalette extends StackPane {
     }
 
     /** Row of the list: title, spacer, category pill and shortcut. */
-    private final class Cell extends ListCell<Command> {
+    private static final class Cell extends ListCell<Command> {
         private final Label title = new Label();
         private final Label category = new Label();
         private final Label shortcut = new Label();

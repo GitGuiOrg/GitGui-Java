@@ -33,7 +33,7 @@ final class GitStarred {
         }
     }
 
-    /** Adds or removes a star; the list is kept in {@code .gcom/github/gitguiorg/gitgui/starred}, so it is per clone. */
+    /** Adds or removes a star; the list is kept in {@code .git/gitgui/starred}, so it is per clone. */
     void setStarred(String hash, boolean starred) {
         List<String> list = new ArrayList<>(starredCommits());
         if (starred) {

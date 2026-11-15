@@ -636,7 +636,7 @@ public final class GitClient {
     /** Hashes of the commits the user starred in this repository, in insertion order. */
     public List<String> starredCommits() { return starredOps.starredCommits(); }
 
-    /** Adds or removes a star; the list is kept in {@code .gcom/github/gitguiorg/gitgui/starred}, so it is per clone. */
+    /** Adds or removes a star; the list is kept in {@code .git/gitgui/starred}, so it is per clone. */
     public void setStarred(String hash, boolean starred) { starredOps.setStarred(hash, starred); }
 
     /** The given commits in commit-date order (newest first), used by the "starred only" filter. */
