@@ -130,7 +130,12 @@ Write-Info "GitHub account: $activeUser"
 
 # git authenticates with the gh account chosen above, whatever login the origin remote URL carries.
 function Invoke-GitAs([string[]]$GitArgs) {
-    & git -C $ProjectDir -c credential.helper= -c 'credential.helper=!gh auth git-credential' @GitArgs
+    # git reports progress ("To https://...") on stderr, which Windows PowerShell 5.1 turns into an
+    # error under 'Stop': only the exit code ($LASTEXITCODE) matters to the callers.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & git -C $ProjectDir -c credential.helper= -c 'credential.helper=!gh auth git-credential' @GitArgs }
+    finally { $ErrorActionPreference = $prev }
 }
 
 # ---------------------------------------------------------------- toolchain
@@ -212,7 +217,7 @@ Write-Info "Version $currentVersion -> $version (tag $tag)"
 
 function Restore-Pom {
     # Puts pom.xml back as committed (the working tree was clean when the script started).
-    & git -C $ProjectDir checkout -- pom.xml
+    $null = Test-Native { git -C $ProjectDir checkout -- pom.xml }
 }
 
 # ---------------------------------------------------------------- build
@@ -282,9 +287,10 @@ try {
 
     # Dedicated version-bump commit on main, then push main with the chosen account's credentials.
     if ($Bump -ne 'none') {
-        & git -C $ProjectDir add -- pom.xml
-        & git -C $ProjectDir commit -m "Release $version" -m "Bump version $currentVersion -> $version."
-        if ($LASTEXITCODE -ne 0) { Stop-Release 'git commit failed; pom.xml was restored.' }
+        $msg1 = "Release $version"
+        $msg2 = "Bump version $currentVersion -> $version."
+        $ok = (Test-Native { git -C $ProjectDir add -- pom.xml }) -and (Test-Native { git -C $ProjectDir commit -m $msg1 -m $msg2 })
+        if (-not $ok) { Stop-Release 'git commit failed; pom.xml was restored.' }
         $committed = $true
     }
     $head = (& git -C $ProjectDir rev-parse HEAD | Out-String).Trim()
