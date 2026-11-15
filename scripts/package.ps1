@@ -119,8 +119,13 @@ if ($Type -eq 'app-image') {
 }
 
 Write-Step "jpackage --type $Type"
+# jpackage warnings go to stderr, which Windows PowerShell 5.1 would turn into errors under 'Stop'.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 & $jpackage @jpackageArgs
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$jpackageExit = $LASTEXITCODE
+$ErrorActionPreference = $prevEap
+if ($jpackageExit -ne 0) { exit $jpackageExit }
 if (-not (Test-Path -LiteralPath $output)) { throw "jpackage finished but $output was not created." }
 
 Write-Info "Version: $fullVersion"

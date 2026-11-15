@@ -54,7 +54,7 @@ class LogExtrasTest {
         write("f.txt", "two\n");
         String second = commitAll("second");
 
-        Path starFile = dir.resolve(".gcom/github/gitguiorg/gitgui/starred");
+        Path starFile = dir.resolve(".git/gitgui/starred");
         assertThat(git.starredCommits()).isEmpty();
         assertThat(Files.exists(starFile)).isFalse();
 

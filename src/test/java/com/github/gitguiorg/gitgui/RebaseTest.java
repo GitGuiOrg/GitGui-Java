@@ -76,7 +76,7 @@ class RebaseTest {
         assertThat(git.log(0, 50, false).get(2).body()).isEqualTo("new body");
         for (String f : List.of("a.txt", "b.txt", "c.txt", "d.txt", "e.txt")) assertThat(dir.resolve(f)).exists();
         assertThat(git.operation()).isEqualTo(Operation.NONE);
-        assertThat(dir.resolve(".gcom/github/gitguiorg/gitgui-rebase")).doesNotExist();
+        assertThat(dir.resolve(".git/gitgui-rebase")).doesNotExist();
     }
 
     @Test
@@ -95,7 +95,7 @@ class RebaseTest {
         assertThat(subjects()).containsExactly("B+C", "A");
         assertThat(git.log(0, 50, false).get(0).body()).isEqualTo("hand written");
         for (String f : List.of("b.txt", "c.txt", "d.txt")) assertThat(dir.resolve(f)).exists();
-        assertThat(dir.resolve(".gcom/github/gitguiorg/gitgui-rebase")).doesNotExist();
+        assertThat(dir.resolve(".git/gitgui-rebase")).doesNotExist();
     }
 
     @Test
@@ -144,7 +144,7 @@ class RebaseTest {
         git.operationAbort(Operation.REBASE);
         assertThat(git.operation()).isEqualTo(Operation.NONE);
         assertThat(subjects()).isEqualTo(before);
-        assertThat(dir.resolve(".gcom/github/gitguiorg/gitgui-rebase")).doesNotExist();
+        assertThat(dir.resolve(".git/gitgui-rebase")).doesNotExist();
     }
 
     @Test
