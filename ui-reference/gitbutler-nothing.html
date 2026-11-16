@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitButler · Nothing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@400;700;900&family=Alata&family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000; --panel:#0e0e0e; --panel2:#151515; --line:#262626; --line2:#333;
+  --fg:#f2f2f2; --mute:#8a8a8a; --dim:#555;
+  --acc:#2f6bff; --acc2:#5b8cff; --acc-soft:rgba(47,107,255,.16); --on-acc:#fff;
+  --dot:rgba(255,255,255,.07);
+  --r-xl:28px; --r-lg:20px; --r-md:14px; --r-sm:999px;
+}
+:root[data-theme="light"]{
+  --bg:#efefef; --panel:#fff; --panel2:#f6f6f6; --line:#e2e2e2; --line2:#d0d0d0;
+  --fg:#111; --mute:#6b6b6b; --dim:#a8a8a8; --dot:rgba(0,0,0,.09);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+/* niente è selezionabile */
+*,*::before,*::after{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+::selection{background:transparent}
+textarea,input{-webkit-user-select:text;user-select:text}
+textarea::selection,input::selection{background:var(--acc-soft)}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:"Alata",system-ui,sans-serif;font-size:14px;letter-spacing:.01em;
+  background-image:radial-gradient(var(--dot) 1px,transparent 1.2px);
+  background-size:12px 12px;overflow:hidden;cursor:default;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+/* ===== shell ===== */
+.app{display:grid;grid-template-columns:76px 300px 1fr;grid-template-rows:64px 1fr 34px;height:100vh;gap:10px;padding:10px}
+.rail{grid-row:1/4;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-xl);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:10px}
+.logo{width:44px;height:44px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:14px}
+.logo i{border-radius:50%;background:var(--fg)}
+.logo i.o{background:transparent}
+.logo i.r{background:var(--acc)}
+.rbtn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;border:1px solid transparent;color:var(--mute);transition:.2s;position:relative}
+.rbtn:hover{border-color:var(--line2);color:var(--fg)}
+.rbtn.on{background:var(--fg);color:var(--bg)}
+.rbtn.on::after{content:"";position:absolute;right:-6px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--acc)}
+.rbtn svg{width:22px;height:22px}
+.rail .sp{flex:1}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--panel2);border:1px dashed var(--line2);display:grid;place-items:center;font-family:"Doto";font-weight:900;font-size:16px}
+
+/* top bar */
+.top{grid-column:2/4;display:flex;align-items:center;gap:10px;overflow-x:auto;scrollbar-width:none}
+.top>*{white-space:nowrap;flex-shrink:0}
+.pill{height:44px;border-radius:var(--r-sm);background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 18px}
+.pill .k{color:var(--mute);font-family:"Fira Code";font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+.proj .name{font-family:"Doto";font-weight:900;font-size:22px;line-height:1}
+.led{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc);animation:blink 1.6s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.top .grow{flex:1}
+.btn{height:44px;border-radius:var(--r-sm);padding:0 20px;font-family:"Fira Code";font-size:12px;text-transform:uppercase;letter-spacing:.1em;border:1px solid var(--line2);background:var(--panel);display:flex;align-items:center;gap:8px;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--fg)}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.btn.acc:hover{background:var(--acc2);border-color:var(--acc2)}
+.btn.inv{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.sm{height:36px;padding:0 14px;font-size:11px}
+.kbd{font-size:10px;border:1px solid currentColor;border-radius:6px;padding:1px 5px;opacity:.6}
+
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-xl);overflow:hidden}
+.side{display:flex;flex-direction:column;min-height:0}
+.sec{padding:18px 18px 8px}
+.sec-h{display:flex;justify-content:space-between;align-items:center;font-family:"Fira Code";font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px}
+.target{border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;background:var(--panel2)}
+.target .br{font-family:"Fira Code";font-size:13px;display:flex;align-items:center;gap:8px}
+.target .meta{display:flex;justify-content:space-between;margin-top:10px;font-family:"Fira Code";font-size:11px;color:var(--mute)}
+.ascii-bar{font-family:"Fira Code";font-size:12px;letter-spacing:-.5px;margin-top:8px;white-space:pre}
+.ascii-bar b{color:var(--acc);font-weight:400}
+.search{margin:4px 18px 10px;height:40px;border-radius:var(--r-sm);border:1px dashed var(--line2);display:flex;align-items:center;padding:0 14px;gap:8px;color:var(--mute);font-family:"Fira Code";font-size:12px}
+.search input{flex:1;background:none;border:0;outline:none;color:var(--fg);font:inherit}
+.search input::placeholder{color:var(--mute)}
+.blist{flex:1;overflow:auto;padding:0 10px 14px}
+.bitem{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r-md);cursor:pointer;transition:.12s;border:1px solid transparent}
+.bitem:hover{background:var(--panel2)}
+.bitem.sel{border-color:var(--fg);background:var(--panel2)}
+.bitem .glyph{font-family:"Fira Code";color:var(--dim);width:18px;text-align:center}
+.bitem.applied .glyph{color:var(--acc)}
+.bitem .t{flex:1;min-width:0}
+.bitem .n{font-family:"Fira Code";font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bitem .s{font-size:11px;color:var(--mute);margin-top:2px}
+.tag{font-family:"Fira Code";font-size:10px;border:1px solid var(--line2);border-radius:var(--r-sm);padding:2px 8px;color:var(--mute);text-transform:uppercase;white-space:nowrap}
+.tag.a{border-color:var(--acc);color:var(--acc)}
+.groupt{font-family:"Fira Code";font-size:10px;color:var(--dim);letter-spacing:.14em;padding:12px 10px 4px;text-transform:uppercase}
+
+/* pages */
+.page{grid-column:2/4;grid-row:2/3;display:none;gap:10px;min-width:0;min-height:0}
+.page.on{display:flex}
+#p-work{display:none}
+#p-work.on{display:grid;grid-template-columns:300px 1fr}
+
+/* workspace */
+.ws{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;min-width:0}
+.ws::-webkit-scrollbar{height:6px}.ws::-webkit-scrollbar-thumb{background:var(--line2);border-radius:9px}
+.col{flex:0 0 330px;display:flex;flex-direction:column;position:relative}
+.col.diff{flex:1 0 440px}
+.col-h{padding:18px 18px 14px;border-bottom:1px dashed var(--line2)}
+.col-h .row{display:flex;align-items:center;gap:10px}
+.col-h h2{font-family:"Doto";font-weight:900;font-size:24px;line-height:1;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.col-h .sub{font-family:"Fira Code";font-size:11px;color:var(--mute);margin-top:8px;display:flex;gap:12px;flex-wrap:wrap}
+.cnt{font-family:"Doto";font-weight:900;font-size:18px;min-width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line2)}
+.cnt.a{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+.col-b{flex:1;overflow:auto;padding:12px}
+.col-b::-webkit-scrollbar,.blist::-webkit-scrollbar{width:6px}.col-b::-webkit-scrollbar-thumb,.blist::-webkit-scrollbar-thumb{background:var(--line2);border-radius:9px}
+
+.file{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-md);cursor:grab;border:1px solid transparent;transition:.12s}
+.file:hover{background:var(--panel2)}
+.file.sel{border-color:var(--fg);background:var(--panel2)}
+.file .st{font-family:"Fira Code";font-size:11px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line2);flex:0 0 auto}
+.file .st.A{border-color:var(--fg);background:var(--fg);color:var(--bg)}
+.file .st.D{border-color:var(--acc);color:var(--acc)}
+.file .p{flex:1;min-width:0;font-family:"Fira Code";font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file .p span{color:var(--mute)}
+.file .d{font-family:"Fira Code";font-size:10.5px;white-space:nowrap}
+.minus{color:var(--acc)}
+.file.dragging{opacity:.35}
+.drop-hl{outline:2px dashed var(--acc);outline-offset:-6px}
+
+.commitbox{margin:12px 0;border:1px solid var(--line2);border-radius:var(--r-lg);padding:12px;background:var(--panel2)}
+.commitbox textarea{width:100%;background:transparent;border:0;resize:none;color:var(--fg);font-family:"Fira Code";font-size:12px;outline:none;height:54px}
+.commitbox textarea::placeholder{color:var(--dim)}
+.commitbox .row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.ai{font-family:"Fira Code";font-size:11px;color:var(--mute);display:flex;align-items:center;gap:6px;cursor:pointer}
+.ai:hover{color:var(--acc)}
+
+.lbl{font-family:"Fira Code";font-size:10px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;padding:8px 6px}
+.lane-files{border:1px dashed var(--line2);border-radius:var(--r-lg);padding:6px;min-height:52px;margin-bottom:6px}
+.lane-files:empty::after{content:"⋯ trascina qui i file ⋯";display:block;text-align:center;color:var(--dim);font-family:"Fira Code";font-size:11px;padding:12px}
+
+.commits{position:relative;padding-left:26px;margin-top:4px}
+.commits::before{content:"";position:absolute;left:11px;top:12px;bottom:12px;border-left:2px dotted var(--line2)}
+.commit{position:relative;padding:10px 12px;border-radius:var(--r-md);margin-bottom:4px;cursor:pointer}
+.commit:hover{background:var(--panel2)}
+.commit::before{content:"";position:absolute;left:-20px;top:15px;width:10px;height:10px;border-radius:50%;background:var(--panel);border:2px solid var(--fg)}
+.commit.local::before{border-color:var(--acc);background:var(--acc)}
+.commit.remote::before{background:var(--fg)}
+.commit.up::before{background:var(--panel);border-style:dashed;border-color:var(--mute)}
+.commit .m{font-size:13px;font-weight:500;line-height:1.3}
+.commit .i{font-family:"Fira Code";font-size:10.5px;color:var(--mute);margin-top:4px;display:flex;gap:10px}
+.lane-foot{padding:12px;border-top:1px dashed var(--line2);display:flex;gap:8px}
+.lane-foot .btn{flex:1;justify-content:center;height:38px;font-size:11px;padding:0 10px}
+.lane-color{position:absolute;top:0;left:30px;right:30px;height:3px;border-radius:0 0 4px 4px}
+
+/* diff */
+.hunk{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px}
+.hunk-h{font-family:"Fira Code";font-size:11px;color:var(--mute);padding:8px 14px;background:var(--panel2);border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.ln{display:grid;grid-template-columns:38px 38px 14px 1fr;font-family:"Fira Code";font-size:12px;line-height:21px;white-space:pre}
+.ln .n{color:var(--dim);text-align:right;padding-right:8px;font-size:10.5px}
+.ln.add{background:rgba(255,255,255,.055)} :root[data-theme="light"] .ln.add{background:rgba(0,0,0,.05)}
+.ln.del{background:var(--acc-soft)} .ln.del .s,.ln.del .c{color:var(--acc)}
+.ln .c{overflow:hidden;text-overflow:ellipsis;padding-right:10px}
+.kw{color:var(--acc)} .str{color:var(--mute)}
+
+.ascii{font-family:"Fira Code";font-size:10px;line-height:1.05;color:var(--dim);white-space:pre;text-align:center;padding:20px 0}
+
+/* ===== BRANCHES page ===== */
+#p-branches .list{flex:0 0 420px;display:flex;flex-direction:column}
+.filters{display:flex;gap:6px;padding:0 18px 12px;flex-wrap:wrap}
+.chip{height:30px;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--line2);font-family:"Fira Code";font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+.chip.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.detail{flex:1;display:flex;flex-direction:column;min-width:0}
+.hero{padding:26px 26px 20px;border-bottom:1px dashed var(--line2)}
+.hero .k{font-family:"Fira Code";font-size:11px;color:var(--mute);letter-spacing:.14em;text-transform:uppercase}
+.hero h1{font-family:"Doto";font-weight:900;font-size:44px;line-height:1;margin:10px 0 14px;word-break:break-all}
+.hero .acts{display:flex;gap:8px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:18px 26px}
+.stat{border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;background:var(--panel2)}
+.stat .v{font-family:"Doto";font-weight:900;font-size:34px;line-height:1}
+.stat .l{font-family:"Fira Code";font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.12em;margin-top:6px}
+.stat.a .v{color:var(--acc)}
+.dotbar{display:flex;gap:3px;margin-top:10px;flex-wrap:wrap}
+.dotbar i{width:6px;height:6px;border-radius:50%;background:var(--line2)}
+.dotbar i.f{background:var(--fg)}.dotbar i.a{background:var(--acc)}
+.detail .col-b{padding:0 26px 26px}
+
+/* ===== SETTINGS page ===== */
+#p-settings .nav{flex:0 0 260px;padding:18px 10px;display:flex;flex-direction:column;gap:2px}
+.navi{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r-md);font-family:"Fira Code";font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);text-align:left}
+.navi:hover{background:var(--panel2);color:var(--fg)}
+.navi.on{background:var(--fg);color:var(--bg)}
+.navi .n{font-family:"Doto";font-weight:900;font-size:14px;width:22px}
+.sbody{flex:1;overflow:auto;padding:26px 30px;min-width:0}
+.sbody h1{font-family:"Doto";font-weight:900;font-size:44px;line-height:1}
+.sbody .lead{color:var(--mute);margin:10px 0 22px;font-size:13px;max-width:560px}
+.group{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;max-width:760px}
+.group .gh{font-family:"Fira Code";font-size:10px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;padding:12px 18px;background:var(--panel2);border-bottom:1px solid var(--line)}
+.opt{display:flex;align-items:center;gap:16px;padding:16px 18px;border-bottom:1px dashed var(--line)}
+.opt:last-child{border-bottom:0}
+.opt .tx{flex:1}
+.opt .t{font-weight:500}
+.opt .d{font-size:12px;color:var(--mute);margin-top:3px}
+.toggle{width:58px;height:30px;border-radius:var(--r-sm);border:1px solid var(--line2);position:relative;flex:0 0 auto;background:
+  radial-gradient(var(--dim) 1px,transparent 1.3px) 0 0/6px 6px}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--mute);transition:.2s}
+.toggle.on{background:var(--acc);border-color:var(--acc)}
+.toggle.on::after{left:31px;background:#fff}
+.seg{display:flex;border:1px solid var(--line2);border-radius:var(--r-sm);padding:3px;gap:2px}
+.seg button{height:28px;padding:0 12px;border-radius:var(--r-sm);font-family:"Fira Code";font-size:11px;text-transform:uppercase;color:var(--mute)}
+.seg button.on{background:var(--fg);color:var(--bg)}
+.swatches{display:flex;gap:8px}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;outline:1px solid var(--line2);outline-offset:2px}
+.sw.on{outline:2px solid var(--fg)}
+.field{height:38px;min-width:240px;border-radius:var(--r-sm);border:1px dashed var(--line2);padding:0 14px;display:flex;align-items:center;font-family:"Fira Code";font-size:12px}
+.field input{background:none;border:0;outline:none;color:var(--fg);font:inherit;width:100%}
+.keyrow{display:flex;gap:6px}
+.keyrow .kbd{font-family:"Fira Code";font-size:11px;padding:4px 8px;opacity:1;border-color:var(--line2)}
+
+/* status bar */
+.status{grid-column:2/4;display:flex;align-items:center;gap:18px;font-family:"Fira Code";font-size:11px;color:var(--mute);padding:0 16px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--panel);white-space:nowrap;overflow:hidden}
+.status .grow{flex:1}
+.status b{color:var(--fg);font-weight:400}
+.toast{position:fixed;left:50%;bottom:56px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--fg);color:var(--bg);font-family:"Fira Code";font-size:12px;padding:12px 20px;border-radius:var(--r-sm);transition:.25s;pointer-events:none;display:flex;gap:10px;align-items:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast i{width:8px;height:8px;border-radius:50%;background:var(--acc)}
+
+/* context menu */
+.cm{position:fixed;z-index:50;min-width:230px;max-width:300px;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r-lg);padding:6px;
+  box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:scale(.96);transform-origin:top left;pointer-events:none;transition:opacity .12s,transform .12s}
+:root[data-theme="light"] .cm{box-shadow:0 18px 50px rgba(0,0,0,.14)}
+.cm.show{opacity:1;transform:none;pointer-events:auto}
+.cm-h{display:flex;align-items:center;gap:8px;padding:8px 10px 10px;font-family:"Fira Code";font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.14em;border-bottom:1px dashed var(--line2);margin-bottom:4px}
+.cm-h i{width:6px;height:6px;border-radius:50%;background:var(--acc);flex:0 0 auto}
+.cm-h span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-i{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:12px;text-align:left;font-size:13px}
+.cm-i:hover{background:var(--fg);color:var(--bg)}
+.cm-i .ic{width:16px;text-align:center;font-family:"Fira Code";font-size:12px;color:var(--mute)}
+.cm-i:hover .ic{color:var(--bg)}
+.cm-i .lb{flex:1}
+.cm-i .sc{font-family:"Fira Code";font-size:10.5px;color:var(--dim)}
+.cm-i.danger{color:var(--acc)}
+.cm-i.danger:hover{background:var(--acc);color:var(--on-acc)}
+.cm-i.danger:hover .ic,.cm-i.danger .ic{color:inherit}
+.cm-i[disabled]{opacity:.35;pointer-events:none}
+.cm-s{height:1px;margin:5px 8px;background:radial-gradient(var(--line2) 1px,transparent 1.3px) 0 0/5px 1px}
+.cm-g{padding:6px 10px 2px;font-family:"Fira Code";font-size:9.5px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+.ctx-hl{outline:1px dashed var(--acc);outline-offset:2px;border-radius:var(--r-md)}
+
+@media (max-width:1100px){
+  #p-work.on{grid-template-columns:240px 1fr}
+  #p-branches .list{flex-basis:300px}
+  #p-settings .nav{flex-basis:200px}
+  .col{flex-basis:290px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:640px){
+  .app{grid-template-columns:1fr;grid-template-rows:64px 1fr 34px;padding:16px}
+  .rail{display:none}.top,.status,.page{grid-column:1}
+  #p-work.on{grid-template-columns:1fr;grid-template-rows:200px 1fr}
+  .page.on{flex-direction:column;overflow:auto}
+  #p-branches .list,#p-settings .nav{flex:0 0 auto;max-height:260px}
+  .col{flex-basis:86vw}.col.diff{flex-basis:92vw}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="rail">
+    <div class="logo" id="logo"></div>
+    <button class="rbtn on" data-page="work" title="Workspace"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+    <button class="rbtn" data-page="branches" title="Branches"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="4" r="2"/><circle cx="6" cy="10" r="1.4"/><circle cx="6" cy="15" r="1.4"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="16" cy="11" r="1.4"/><circle cx="11" cy="14" r="1.4"/></svg></button>
+    <div class="sp"></div>
+    <button class="rbtn" id="theme" title="Tema"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="2.5" r="1.3"/><circle cx="12" cy="21.5" r="1.3"/><circle cx="2.5" cy="12" r="1.3"/><circle cx="21.5" cy="12" r="1.3"/><circle cx="5.3" cy="5.3" r="1.3"/><circle cx="18.7" cy="18.7" r="1.3"/><circle cx="5.3" cy="18.7" r="1.3"/><circle cx="18.7" cy="5.3" r="1.3"/></svg></button>
+    <button class="rbtn" data-page="settings" title="Settings"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="3" r="1.5"/><circle cx="12" cy="21" r="1.5"/><circle cx="3" cy="12" r="1.5"/><circle cx="21" cy="12" r="1.5"/><circle cx="5.6" cy="5.6" r="1.2"/><circle cx="18.4" cy="18.4" r="1.2"/><circle cx="5.6" cy="18.4" r="1.2"/><circle cx="18.4" cy="5.6" r="1.2"/></svg></button>
+    <div class="avatar">G</div>
+  </nav>
+
+  <header class="top">
+    <div class="pill proj"><span class="k">Project</span><span class="name">gitbutler-client</span><span style="color:var(--mute);font-family:'Fira Code'">▾</span></div>
+    <div class="pill"><span class="led"></span><span class="k" id="pageLabel">Workspace</span><span style="font-family:'Fira Code';font-size:12px" id="pageInfo">3 branches applied</span></div>
+    <div class="grow"></div>
+    <button class="btn" id="fetch"><span>↻</span> Fetch <span class="kbd">⌘R</span></button>
+    <button class="btn inv" id="newBranch">＋ New branch</button>
+    <button class="btn acc" id="pushAll">Push all ↑</button>
+  </header>
+
+  <!-- ============ WORKSPACE ============ -->
+  <div class="page on" id="p-work">
+    <aside class="panel side">
+      <div class="sec">
+        <div class="sec-h"><span>Target</span><span>origin</span></div>
+        <div class="target">
+          <div class="br"><span style="color:var(--acc)">●</span>origin/master</div>
+          <div class="ascii-bar">[<b>■■■■■■</b>■■■■■■□□□□□□□□]</div>
+          <div class="meta"><span>↓ 6 upstream</span><span>sync 2m ago</span></div>
+        </div>
+      </div>
+      <div class="search">⌕ <input placeholder="search branches…" id="wsSearch"><span class="kbd">/</span></div>
+      <div class="blist" id="wsBranches"></div>
+    </aside>
+    <main class="ws" id="ws">
+      <section class="panel col">
+        <div class="col-h">
+          <div class="row"><h2>Unassigned</h2><div class="cnt a" id="ucnt">0</div></div>
+          <div class="sub"><span>uncommitted changes</span><span>·</span><span>drag → lane</span></div>
+        </div>
+        <div class="col-b" data-drop="u" id="ulist"></div>
+        <div class="ascii" style="padding:6px 0 14px">·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·</div>
+      </section>
+      <div id="lanes" style="display:contents"></div>
+      <section class="panel col diff">
+        <div class="col-h">
+          <div class="row"><h2 id="dtitle">diff</h2><span class="tag" id="dstat">—</span></div>
+          <div class="sub" id="dpath">select a file</div>
+        </div>
+        <div class="col-b" id="diff"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ BRANCHES ============ -->
+  <div class="page" id="p-branches">
+    <aside class="panel list">
+      <div class="col-h" style="border:0;padding-bottom:6px">
+        <div class="row"><h2>Branches</h2><div class="cnt" id="bcnt">0</div></div>
+      </div>
+      <div class="search">⌕ <input placeholder="filter by name…" id="bSearch"><span class="kbd">/</span></div>
+      <div class="filters" id="filters">
+        <button class="chip on" data-f="all">All</button><button class="chip" data-f="Applied">Applied</button><button class="chip" data-f="Remote">Remote</button><button class="chip" data-f="Local">Local</button>
+      </div>
+      <div class="blist" id="bList"></div>
+    </aside>
+    <section class="panel detail" id="bDetail"></section>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div class="page" id="p-settings">
+    <aside class="panel nav" id="sNav"></aside>
+    <section class="panel sbody" id="sBody" style="flex:1"></section>
+  </div>
+
+  <footer class="status">
+    <span><span style="color:var(--acc)">●</span> <b>ready</b></span>
+    <span>HEAD <b>a91f3c2</b></span>
+    <span>user <b>gb-dev</b></span>
+    <span class="grow"></span>
+    <span id="ticker">▚ ▞ ▚ oplog: snapshot #482 created</span>
+    <span id="clock">00:00:00</span>
+  </footer>
+</div>
+<div class="toast" id="toast"><i></i><span></span></div>
+<div class="cm" id="cm"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const G=["01110","10000","10111","10001","01112"];
+$('#logo').innerHTML=G.join('').split('').map(c=>`<i class="${c==='0'?'o':c==='2'?'r':''}"></i>`).join('');
+
+/* ---------- data ---------- */
+const files={
+ 'src/lib/stack/StackLane.svelte':{st:'M',a:24,d:8},
+ 'src/lib/commit/CommitBox.svelte':{st:'M',a:12,d:3},
+ 'crates/but-core/src/rebase.rs':{st:'M',a:41,d:17},
+ 'src/routes/+layout.svelte':{st:'M',a:2,d:2},
+ 'docs/nothing-theme.md':{st:'A',a:58,d:0},
+ 'src/lib/legacy/OldPanel.svelte':{st:'D',a:0,d:112},
+ 'crates/but-api/src/oplog.rs':{st:'M',a:9,d:4},
+};
+let assign={
+ 'src/lib/stack/StackLane.svelte':'u','src/lib/commit/CommitBox.svelte':'u','docs/nothing-theme.md':'u','src/routes/+layout.svelte':'u',
+ 'crates/but-core/src/rebase.rs':'l0','crates/but-api/src/oplog.rs':'l1','src/lib/legacy/OldPanel.svelte':'l2'
+};
+const lanes=[
+ {name:'dot-matrix-ui',color:'var(--acc)',up:2,commits:[
+   {m:'Add Doto font + dotted grid background',h:'e41a9b2',t:'12m',k:'local'},
+   {m:'Pill-shaped action buttons',h:'b77c0d1',t:'1h',k:'local'},
+   {m:'Introduce monochrome token set',h:'3ad12ff',t:'3h',k:'remote'}]},
+ {name:'oplog-snapshots',color:'var(--fg)',up:1,commits:[
+   {m:'Snapshot on every rebase',h:'9c0e4a1',t:'40m',k:'local'},
+   {m:'Restore from snapshot',h:'2fe88a0',t:'1d',k:'remote'}]},
+ {name:'remove-legacy-panel',color:'var(--mute)',up:0,commits:[]},
+];
+const remote=[
+ {n:'feat/agents-panel',g:'Remote',by:'origin',age:'2d',ahead:7,behind:3,commits:[
+   {m:'Agents panel: list running sessions',h:'71ab0c3',t:'2d',k:'remote'},
+   {m:'Wire agent events to oplog',h:'c09e112',t:'3d',k:'remote'}]},
+ {n:'fix/rebase-conflict',g:'Remote',by:'origin',age:'4d',ahead:2,behind:9,commits:[
+   {m:'Handle empty commit during rebase',h:'5e1f0aa',t:'4d',k:'remote'}]},
+ {n:'chore/deps-bump',g:'Remote',by:'origin',age:'1w',ahead:1,behind:14,commits:[
+   {m:'Bump tauri to 2.4',h:'aa31d77',t:'1w',k:'remote'}]},
+ {n:'experiment/ascii-diff',g:'Local',by:'stash',age:'3w',ahead:4,behind:40,commits:[
+   {m:'Render diff gutters as braille',h:'0d4e9b8',t:'3w',k:'local'}]},
+ {n:'spike/tauri-v2',g:'Local',by:'stash',age:'1mo',ahead:11,behind:88,commits:[
+   {m:'WIP window chrome',h:'f7c2e10',t:'1mo',k:'local'}]},
+];
+const allBranches=()=>[
+ ...lanes.map(l=>({n:l.name,g:'Applied',by:'you',age:'now',ahead:l.commits.length,behind:0,commits:l.commits,lane:true})),
+ ...remote];
+
+/* ---------- navigation ---------- */
+let page='work';
+const pageMeta={work:['Workspace',()=>lanes.length+' branches applied'],branches:['Branches',()=>allBranches().length+' total'],settings:['Settings',()=>'gitbutler-client']};
+function go(p){
+  page=p;
+  $$('.rbtn[data-page]').forEach(b=>b.classList.toggle('on',b.dataset.page===p));
+  $$('.page').forEach(el=>el.classList.toggle('on',el.id==='p-'+p));
+  $('#pageLabel').textContent=pageMeta[p][0];$('#pageInfo').textContent=pageMeta[p][1]();
+  render();
+}
+$$('.rbtn[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));
+
+/* ---------- workspace ---------- */
+let sel='src/lib/stack/StackLane.svelte';
+function fileRow(p){
+  const f=files[p],i=p.lastIndexOf('/');
+  return `<div class="file${sel===p?' sel':''}" draggable="true" data-p="${p}">
+    <span class="st ${f.st}">${f.st}</span>
+    <span class="p"><span>${p.slice(0,i+1)}</span>${p.slice(i+1)}</span>
+    <span class="d">+${f.a} <span class="minus">−${f.d}</span></span></div>`;
+}
+const commitsHtml=cs=>`<div class="commits">${cs.map(c=>`<div class="commit ${c.k}" data-h="${c.h}"><div class="m">${esc(c.m)}</div><div class="i"><span>${c.h}</span><span>${c.t}</span><span>${c.k==='local'?'● local':c.k==='up'?'◌ upstream':'○ pushed'}</span></div></div>`).join('')}</div>`;
+const emptyCommits=`<div class="ascii">┌─────────────┐
+│ ░░░░░░░░░░░ │
+│  no commits │
+│ ░░░░░░░░░░░ │
+└─────────────┘</div>`;
+function branchItem(b,selName){
+  return `<div class="bitem${b.g==='Applied'?' applied':''}${selName===b.n?' sel':''}" data-b="${b.n}"><span class="glyph">${b.g==='Applied'?'●':b.g==='Remote'?'○':'◌'}</span>
+   <div class="t"><div class="n">${b.n}</div><div class="s">${b.commits.length} commits · ${b.by} · ${b.age}</div></div>
+   ${b.g==='Applied'?'<span class="tag a">applied</span>':''}</div>`;
+}
+function renderWork(){
+  const u=Object.keys(assign).filter(p=>assign[p]==='u');
+  $('#ulist').innerHTML=u.map(fileRow).join('')||`<div class="ascii">
+   .-----------.
+   |  ▪     ▪  |
+   |     ◡     |
+   '-----------'
+  working tree clean</div>`;
+  $('#ucnt').textContent=u.length;
+  $('#lanes').innerHTML=lanes.map((l,li)=>{
+    const lf=Object.keys(assign).filter(p=>assign[p]==='l'+li);
+    return `<section class="panel col" data-lane="${li}">
+      <div class="lane-color" style="background:${l.color}"></div>
+      <div class="col-h">
+        <div class="row"><h2>${l.name}</h2><div class="cnt">${l.commits.length}</div></div>
+        <div class="sub"><span>${l.up?'↑ '+l.up+' to push':'up to date'}</span><span>·</span><span>${lf.length} staged</span></div>
+      </div>
+      <div class="col-b">
+        <div class="lbl">◌ changes</div>
+        <div class="lane-files" data-drop="l${li}">${lf.map(fileRow).join('')}</div>
+        ${lf.length?`<div class="commitbox"><textarea placeholder="commit message_"></textarea>
+          <div class="row"><span class="ai" data-gen>✳ generate</span><span style="flex:1"></span><button class="btn acc sm" data-commit="${li}">Commit</button></div></div>`:''}
+        <div class="lbl">◍ commits</div>
+        ${l.commits.length?commitsHtml(l.commits):emptyCommits}
+      </div>
+      <div class="lane-foot"><button class="btn" data-unapply="${li}">Unapply</button><button class="btn inv" data-push="${li}">Push ↑</button></div>
+    </section>`}).join('');
+  const q=($('#wsSearch').value||'').toLowerCase();
+  const groups=['Applied','Remote','Local'];
+  $('#wsBranches').innerHTML=groups.map(g=>{const it=allBranches().filter(b=>b.g===g&&b.n.includes(q));return it.length?`<div class="groupt">${g} — ${it.length}</div>`+it.map(b=>branchItem(b)).join(''):''}).join('');
+  $$('#wsBranches .bitem').forEach(el=>el.onclick=()=>{bSel=el.dataset.b;go('branches')});
+  renderDiff();
+}
+function renderDiff(){
+  const f=files[sel]; if(!f){$('#diff').innerHTML='';$('#dtitle').textContent='diff';$('#dstat').textContent='—';$('#dpath').textContent='select a file';return}
+  $('#dtitle').textContent=sel.split('/').pop();$('#dpath').textContent=sel;$('#dstat').textContent=`+${f.a} −${f.d}`;
+  const add=(n,c)=>`<div class="ln add"><span class="n"></span><span class="n">${n}</span><span class="s">+</span><span class="c">${c}</span></div>`;
+  const del=(n,c)=>`<div class="ln del"><span class="n">${n}</span><span class="n"></span><span class="s">−</span><span class="c">${c}</span></div>`;
+  const ctx=(a,b,c)=>`<div class="ln"><span class="n">${a}</span><span class="n">${b}</span><span class="s"> </span><span class="c">${c}</span></div>`;
+  const K=s=>s.replace(/\b(import|export|let|const|fn|pub|function|return|if|use|impl)\b/g,'<span class="kw">$1</span>').replace(/('[^']*')/g,'<span class="str">$1</span>');
+  $('#diff').innerHTML=`
+  <div class="hunk"><div class="hunk-h"><span>@@ -12,7 +12,11 @@</span><span>hunk 1/2</span></div>
+   ${ctx(12,12,esc("<script lang='ts'>"))}
+   ${ctx(13,13,K("  import { Lane } from '$lib/stack';"))}
+   ${del(14,K("  import Panel from '$lib/legacy/OldPanel.svelte';"))}
+   ${add(14,K("  import DotGrid from '$lib/ui/DotGrid.svelte';"))}
+   ${add(15,K("  import Pill from '$lib/ui/Pill.svelte';"))}
+   ${ctx(15,16,"")}
+   ${del(16,K("  let radius = 4;"))}
+   ${add(17,K("  const radius = 28; // nothing-style"))}
+   ${add(18,K("  const accent = 'var(--acc)';"))}
+   ${ctx(17,19,K("  export let stack: Stack;"))}
+  </div>
+  <div class="hunk"><div class="hunk-h"><span>@@ -48,6 +52,10 @@</span><span>hunk 2/2</span></div>
+   ${ctx(48,52,esc('<Lane {stack}>'))}
+   ${del(49,esc('  <Panel title={stack.name} />'))}
+   ${add(53,esc('  <DotGrid density={12}>'))}
+   ${add(54,esc('    <Pill tone="accent">{stack.name}</Pill>'))}
+   ${add(55,esc('  </DotGrid>'))}
+   ${ctx(50,56,esc('  <slot />'))}
+   ${ctx(51,57,esc('</Lane>'))}
+  </div>
+  <div class="ascii">▖▘▝▗  end of diff  ▗▝▘▖</div>`;
+}
+
+/* ---------- branches page ---------- */
+let bSel='dot-matrix-ui', bFilter='all';
+const dots=(n,max,cls)=>{const k=Math.min(n,max);return `<div class="dotbar">${Array.from({length:max},(_,i)=>`<i class="${i<k?cls:''}"></i>`).join('')}</div>`};
+function renderBranches(){
+  const q=($('#bSearch').value||'').toLowerCase();
+  const list=allBranches().filter(b=>(bFilter==='all'||b.g===bFilter)&&b.n.includes(q));
+  $('#bcnt').textContent=list.length;
+  $('#bList').innerHTML=['Applied','Remote','Local'].map(g=>{const it=list.filter(b=>b.g===g);return it.length?`<div class="groupt">${g} — ${it.length}</div>`+it.map(b=>branchItem(b,bSel)).join(''):''}).join('')
+    ||`<div class="ascii">¯\\_(ツ)_/¯\nno match</div>`;
+  $$('#bList .bitem').forEach(el=>el.onclick=()=>{bSel=el.dataset.b;renderBranches()});
+  $$('#filters .chip').forEach(c=>c.classList.toggle('on',c.dataset.f===bFilter));
+  const b=allBranches().find(x=>x.n===bSel)||allBranches()[0]; if(!b){$('#bDetail').innerHTML='';return}
+  const applied=b.g==='Applied';
+  $('#bDetail').innerHTML=`
+   <div class="hero">
+     <div class="k">${b.g} branch · ${b.by}</div>
+     <h1>${b.n}</h1>
+     <div class="acts">
+       ${applied?`<button class="btn" data-act="open">Open in workspace →</button><button class="btn" data-act="unapply">Unapply</button>`
+                :`<button class="btn acc" data-act="apply">Apply to workspace</button>`}
+       <button class="btn">Create PR</button>
+       <button class="btn" data-act="delete">Delete</button>
+     </div>
+   </div>
+   <div class="stats">
+     <div class="stat a"><div class="v">${String(b.ahead).padStart(2,'0')}</div><div class="l">ahead</div>${dots(b.ahead,20,'a')}</div>
+     <div class="stat"><div class="v">${String(b.behind).padStart(2,'0')}</div><div class="l">behind</div>${dots(b.behind,20,'f')}</div>
+     <div class="stat"><div class="v">${String(b.commits.length).padStart(2,'0')}</div><div class="l">commits</div>${dots(b.commits.length,20,'f')}</div>
+     <div class="stat"><div class="v">${b.age}</div><div class="l">last activity</div>${dots(3,20,'f')}</div>
+   </div>
+   <div class="col-b"><div class="lbl">◍ commit history</div>${b.commits.length?commitsHtml(b.commits):emptyCommits}</div>`;
+  $$('#bDetail [data-act]').forEach(btn=>btn.onclick=()=>{
+    const a=btn.dataset.act;
+    if(a==='open'){go('work');return}
+    if(a==='apply'){const i=remote.indexOf(b);remote.splice(i,1);lanes.push({name:b.n,color:'var(--line2)',up:0,commits:b.commits});toast('applied '+b.n)}
+    if(a==='unapply'){unapply(lanes.findIndex(l=>l.name===b.n))}
+    if(a==='delete'){if(applied)unapply(lanes.findIndex(l=>l.name===b.n));const i=remote.findIndex(r=>r.n===b.n);if(i>=0)remote.splice(i,1);bSel=allBranches()[0]?.n;toast('deleted '+b.n)}
+    render();
+  });
+}
+$$('#filters .chip').forEach(c=>c.onclick=()=>{bFilter=c.dataset.f;renderBranches()});
+$('#bSearch').oninput=renderBranches; $('#wsSearch').oninput=renderWork;
+function unapply(li){
+  if(li<0)return;const l=lanes[li];
+  Object.keys(assign).forEach(p=>{if(assign[p]==='l'+li)assign[p]='u'});
+  // re-index lane assignments
+  Object.keys(assign).forEach(p=>{const m=assign[p].match(/^l(\d+)$/);if(m&&+m[1]>li)assign[p]='l'+(m[1]-1)});
+  lanes.splice(li,1);remote.unshift({n:l.name,g:'Local',by:'you',age:'now',ahead:l.commits.length,behind:0,commits:l.commits});
+  toast('unapplied '+l.name);
+}
+
+/* ---------- settings page ---------- */
+const accents=[['Blue','#2f6bff','#5b8cff','rgba(47,107,255,.16)'],['Signal','#ff5a00','#ff7a2e','rgba(255,90,0,.15)'],['Acid','#c6f432','#d8ff5c','rgba(198,244,50,.16)','#000'],['Violet','#8b5cf6','#a78bfa','rgba(139,92,246,.18)'],['Red','#d71921','#ff2b36','rgba(215,25,33,.14)']];
+const S={sec:'appearance',accent:0,theme:'dark',density:'cozy',toggles:{autoFetch:true,signCommits:false,aiMsg:true,aiBranch:true,telemetry:false,sounds:true,dotgrid:true,anim:true,forcePush:false,hooks:true},name:'gb-dev',email:'dev@example.com',interval:'5 min'};
+const secs=[['general','General'],['git','Git'],['ai','AI'],['appearance','Appearance'],['keys','Shortcuts'],['about','About']];
+const T=(k,t,d)=>`<div class="opt"><div class="tx"><div class="t">${t}</div><div class="d">${d}</div></div><button class="toggle${S.toggles[k]?' on':''}" data-t="${k}"></button></div>`;
+const O=(t,d,ctl)=>`<div class="opt"><div class="tx"><div class="t">${t}</div><div class="d">${d}</div></div>${ctl}</div>`;
+const seg=(k,opts)=>`<div class="seg">${opts.map(o=>`<button class="${S[k]===o?'on':''}" data-seg="${k}" data-v="${o}">${o}</button>`).join('')}</div>`;
+function renderSettings(){
+  $('#sNav').innerHTML=`<div class="sec-h" style="padding:4px 14px 10px">Settings</div>`+secs.map(([k,l],i)=>`<button class="navi${S.sec===k?' on':''}" data-s="${k}"><span class="n">${String(i+1).padStart(2,'0')}</span>${l}</button>`).join('')
+    +`<div style="flex:1"></div><div class="ascii">░▒▓█ v0.15.2 █▓▒░</div>`;
+  $$('#sNav .navi').forEach(b=>b.onclick=()=>{S.sec=b.dataset.s;renderSettings()});
+  const body={
+   general:`<h1>General</h1><p class="lead">Project-level preferences for gitbutler-client.</p>
+     <div class="group"><div class="gh">Project</div>
+       ${O('Project name','Shown in the top bar.',`<div class="field"><input value="gitbutler-client"></div>`)}
+       ${O('Default target','Branch new work is based on.',`<div class="field">origin/master ▾</div>`)}</div>
+     <div class="group"><div class="gh">Sync</div>
+       ${T('autoFetch','Auto fetch','Fetch upstream in the background.')}
+       ${O('Fetch interval','How often to check the remote.',seg('interval',['1 min','5 min','15 min']))}</div>
+     <div class="group"><div class="gh">Privacy</div>${T('telemetry','Usage metrics','Share anonymous usage data.')}</div>`,
+   git:`<h1>Git</h1><p class="lead">How commits are authored and pushed.</p>
+     <div class="group"><div class="gh">Author</div>
+       ${O('Name','Used for new commits.',`<div class="field"><input value="${S.name}"></div>`)}
+       ${O('Email','Used for new commits.',`<div class="field"><input value="${S.email}"></div>`)}</div>
+     <div class="group"><div class="gh">Behaviour</div>
+       ${T('signCommits','Sign commits','GPG / SSH signature on every commit.')}
+       ${T('hooks','Run git hooks','Execute pre-commit and commit-msg hooks.')}
+       ${T('forcePush','Allow force push','Needed after rewriting pushed commits.')}</div>`,
+   ai:`<h1>AI</h1><p class="lead">Generated commit messages and branch names.</p>
+     <div class="group"><div class="gh">Generation</div>
+       ${T('aiMsg','Commit messages','Suggest a message from the staged diff.')}
+       ${T('aiBranch','Branch names','Name new branches from their first change.')}
+       ${O('Provider','Model used for generation.',`<div class="field">Claude ▾</div>`)}</div>`,
+   appearance:`<h1>Appearance</h1><p class="lead">Dots, pills and one accent colour.</p>
+     <div class="group"><div class="gh">Colour</div>
+       ${O('Accent','Used for local commits, deletions and primary actions.',`<div class="swatches">${accents.map((a,i)=>`<button class="sw${S.accent===i?' on':''}" title="${a[0]}" data-acc="${i}" style="background:${a[1]}"></button>`).join('')}</div>`)}
+       ${O('Theme','Light or dark interface.',seg('theme',['dark','light']))}</div>
+     <div class="group"><div class="gh">Layout</div>
+       ${O('Density','Row spacing in lists.',seg('density',['compact','cozy']))}
+       ${T('dotgrid','Dot grid background','The dotted matrix behind everything.')}
+       ${T('anim','Animations','Blinking LED, toasts and transitions.')}
+       ${T('sounds','Interface sounds','Short clicks on commit and push.')}</div>`,
+   keys:`<h1>Shortcuts</h1><p class="lead">Keyboard first.</p>
+     <div class="group"><div class="gh">Global</div>
+       ${[['Fetch','⌘ R'],['New branch','⌘ B'],['Commit','⌘ ↵'],['Push','⌘ ⇧ P'],['Search','/'],['Toggle theme','⌘ ⇧ L']].map(([t,k])=>O(t,'',`<div class="keyrow">${k.split(' ').map(x=>`<span class="kbd">${x}</span>`).join('')}</div>`)).join('')}</div>`,
+   about:`<h1>About</h1><p class="lead">A concept redesign of the GitButler client in a dot-matrix language.</p>
+     <div class="group"><div class="gh">Build</div>
+       ${O('Version','Stable channel.',`<span class="tag a">v0.15.2</span>`)}
+       ${O('Updates','Last checked 2 minutes ago.',`<button class="btn sm">Check now</button>`)}</div>
+     <div class="ascii" style="text-align:left;max-width:760px">
+  ●●●   ●●●  ●●●●
+ ●     ●   ● ●   ●
+ ● ●●  ●   ● ●●●●
+ ●   ● ●   ● ●   ●
+  ●●●   ●●●  ●●●●     built with dots</div>`
+  }[S.sec];
+  $('#sBody').innerHTML=body;
+  $$('#sBody [data-t]').forEach(b=>b.onclick=()=>{S.toggles[b.dataset.t]=!S.toggles[b.dataset.t];applyPrefs();renderSettings()});
+  $$('#sBody [data-seg]').forEach(b=>b.onclick=()=>{S[b.dataset.seg]=b.dataset.v;applyPrefs();renderSettings()});
+  $$('#sBody [data-acc]').forEach(b=>b.onclick=()=>{S.accent=+b.dataset.acc;applyPrefs();renderSettings();toast('accent → '+accents[S.accent][0])});
+}
+function applyPrefs(){
+  const r=document.documentElement.style,a=accents[S.accent];
+  r.setProperty('--acc',a[1]);r.setProperty('--acc2',a[2]);r.setProperty('--acc-soft',a[3]);r.setProperty('--on-acc',a[4]||'#fff');
+  document.documentElement.dataset.theme=S.theme;
+  document.body.style.backgroundImage=S.toggles.dotgrid?'':'none';
+  $('.led').style.animation=S.toggles.anim?'':'none';
+  document.body.style.fontSize=S.density==='compact'?'13px':'14px';
+}
+
+/* ---------- interactions ---------- */
+let dragP=null;
+function bindWork(){
+  $$('#p-work .file').forEach(el=>{
+    el.onclick=()=>{sel=el.dataset.p;renderWork();bindWork()};
+    el.ondragstart=e=>{dragP=el.dataset.p;el.classList.add('dragging');e.dataTransfer.setData('text',dragP)};
+    el.ondragend=()=>el.classList.remove('dragging');
+  });
+  $$('[data-drop]').forEach(z=>{
+    z.ondragover=e=>{e.preventDefault();z.classList.add('drop-hl')};
+    z.ondragleave=()=>z.classList.remove('drop-hl');
+    z.ondrop=e=>{e.preventDefault();z.classList.remove('drop-hl');if(dragP){assign[dragP]=z.dataset.drop;toast(`moved → ${z.dataset.drop==='u'?'unassigned':lanes[+z.dataset.drop.slice(1)].name}`);dragP=null;render()}};
+  });
+  $$('[data-gen]').forEach(g=>g.onclick=()=>{g.closest('.commitbox').querySelector('textarea').value='Refine lane layout and dot-matrix tokens';toast('message generated')});
+  $$('[data-commit]').forEach(b=>b.onclick=()=>{
+    const li=+b.dataset.commit,ta=b.closest('.commitbox').querySelector('textarea');
+    const msg=ta.value.trim()||'Update '+Object.keys(assign).filter(p=>assign[p]==='l'+li).length+' files';
+    Object.keys(assign).forEach(p=>{if(assign[p]==='l'+li){delete assign[p];if(sel===p)sel=null}});
+    lanes[li].commits.unshift({m:msg,h:Math.random().toString(16).slice(2,9),t:'now',k:'local'});
+    lanes[li].up++;toast('committed → '+lanes[li].name);render();
+  });
+  $$('[data-push]').forEach(b=>b.onclick=()=>{const l=lanes[+b.dataset.push];l.commits.forEach(c=>c.k='remote');l.up=0;toast('pushed '+l.name+' ↑');render()});
+  $$('[data-unapply]').forEach(b=>b.onclick=()=>{unapply(+b.dataset.unapply);render()});
+}
+function render(){
+  if(page==='work'){renderWork();bindWork()}
+  if(page==='branches')renderBranches();
+  if(page==='settings')renderSettings();
+  $('#pageInfo').textContent=pageMeta[page][1]();
+}
+function toast(t){const el=$('#toast');el.querySelector('span').textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800)}
+$('#newBranch').onclick=()=>{lanes.push({name:'branch-'+(lanes.length+1),color:'var(--line2)',up:0,commits:[]});go('work');toast('new branch created');$('#ws').scrollTo({left:9999,behavior:'smooth'})};
+$('#pushAll').onclick=()=>{lanes.forEach(l=>{l.commits.forEach(c=>c.k='remote');l.up=0});toast('pushed all branches ↑');render()};
+$('#fetch').onclick=()=>toast('fetched origin · 6 upstream commits');
+$('#theme').onclick=()=>{S.theme=S.theme==='light'?'dark':'light';applyPrefs();render()};
+document.addEventListener('dragstart',e=>{if(!e.target.closest||!e.target.closest('.file'))e.preventDefault()});
+setInterval(()=>{$('#clock').textContent=new Date().toTimeString().slice(0,8)},1000);
+const tk=['▚ ▞ ▚ oplog: snapshot #482 created','▞ ▚ ▞ watching 1,284 files','▚ ▞ ▚ no conflicts detected','▞ ▚ ▞ upstream: 6 new commits'];let ti=0;
+setInterval(()=>{$('#ticker').textContent=tk[++ti%tk.length]},3000);
+/* ---------- context menu ---------- */
+const cm=$('#cm');let ctxEl=null;
+const I=(ic,lb,fn,o={})=>({ic,lb,fn,...o});
+function laneMoveItems(p){
+  return [{g:'Move to'},...lanes.map((l,i)=>I('→',l.name,()=>{assign[p]='l'+i;toast('moved → '+l.name);render()},{dis:assign[p]==='l'+i})),
+    I('↩','Unassigned',()=>{assign[p]='u';toast('moved → unassigned');render()},{dis:assign[p]==='u'})];
+}
+function menuFor(t){
+  const file=t.closest('.file'),commit=t.closest('.commit'),lane=t.closest('[data-lane]'),bitem=t.closest('.bitem'),
+        ln=t.closest('.ln'),hunk=t.closest('.hunk'),rb=t.closest('.rbtn'),opt=t.closest('.opt'),stat=t.closest('.stat'),
+        unas=t.closest('#ulist')||t.closest('.col')&&t.closest('.col').querySelector('#ulist');
+  if(file){const p=file.dataset.p,n=p.split('/').pop();return{el:file,title:n,items:[
+    I('◉','Open diff',()=>{sel=p;render()},{sc:'↵'}),
+    ...laneMoveItems(p),'-',
+    I('⧉','Copy path',()=>toast('copied '+p),{sc:'⌘C'}),
+    I('↗','Open in editor',()=>toast('opening '+n+' in editor')),'-',
+    I('✕','Discard changes',()=>{delete assign[p];delete files[p];if(sel===p)sel=null;toast('discarded '+n);render()},{danger:1,sc:'⌫'})]}}
+  if(commit){const h=commit.dataset.h,li=lane?+lane.dataset.lane:-1,cs=li>=0?lanes[li].commits:null,ci=cs?cs.findIndex(c=>c.h===h):-1;
+    return{el:commit,title:'commit '+h,items:[
+    I('⧉','Copy SHA',()=>toast('copied '+h),{sc:'⌘C'}),
+    I('✎','Edit message',()=>toast('editing '+h),{dis:!cs}),
+    I('⇣','Squash into parent',()=>{const a=cs[ci],b=cs[ci+1];b.m=b.m+' + '+a.m;cs.splice(ci,1);toast('squashed '+h);render()},{dis:!cs||ci>=cs.length-1}),
+    I('↥','Push up to here',()=>{for(let i=ci;i<cs.length;i++)cs[i].k='remote';lanes[li].up=cs.filter(c=>c.k==='local').length;toast('pushed up to '+h);render()},{dis:!cs}),'-',
+    I('↶','Undo commit',()=>{cs.splice(ci,1);lanes[li].up=cs.filter(c=>c.k==='local').length;toast('undid '+h);render()},{danger:1,dis:!cs||ci!==0})]}}
+  if(ln||hunk){const el=ln||hunk;return{el,title:sel?sel.split('/').pop()+' · hunk':'diff',items:[
+    I('＋','Stage hunk',()=>toast('hunk staged')),
+    I('⧉','Copy line',()=>toast('line copied'),{dis:!ln,sc:'⌘C'}),
+    I('↗','Open at line',()=>toast('opening in editor')),'-',
+    I('✕','Discard hunk',()=>toast('hunk discarded'),{danger:1})]}}
+  if(lane){const li=+lane.dataset.lane,l=lanes[li];return{el:lane,title:l.name,items:[
+    I('↑','Push branch',()=>{l.commits.forEach(c=>c.k='remote');l.up=0;toast('pushed '+l.name);render()},{sc:'⌘⇧P'}),
+    I('✳','Generate branch name',()=>{l.name=['dotted-lanes','pill-buttons','matrix-ui'][li%3]+'-'+(li+1);toast('renamed → '+l.name);render()}),
+    I('⧉','Copy branch name',()=>toast('copied '+l.name)),'-',
+    I('←','Move left',()=>{swapLane(li,li-1)},{dis:li===0}),
+    I('→','Move right',()=>{swapLane(li,li+1)},{dis:li===lanes.length-1}),'-',
+    I('⊖','Unapply',()=>{unapply(li);render()}),
+    I('✕','Delete branch',()=>{unapply(li);remote.shift();toast('deleted '+l.name);render()},{danger:1})]}}
+  if(unas){const u=Object.keys(assign).filter(p=>assign[p]==='u');return{el:t.closest('.col'),title:'unassigned · '+u.length,items:[
+    I('＋','Commit all to new branch',()=>{lanes.push({name:'branch-'+(lanes.length+1),color:'var(--line2)',up:0,commits:[]});u.forEach(p=>assign[p]='l'+(lanes.length-1));toast('moved '+u.length+' files to new branch');render()},{dis:!u.length}),
+    I('↻','Refresh status',()=>toast('working tree rescanned')),'-',
+    I('✕','Discard all',()=>{u.forEach(p=>{delete assign[p];delete files[p]});sel=null;toast('discarded '+u.length+' files');render()},{danger:1,dis:!u.length})]}}
+  if(bitem){const n=bitem.dataset.b,b=allBranches().find(x=>x.n===n),ap=b.g==='Applied';return{el:bitem,title:n,items:[
+    I('◉','Show details',()=>{bSel=n;go('branches')}),
+    ap?I('⊖','Unapply',()=>{unapply(lanes.findIndex(l=>l.name===n));render()}):I('⊕','Apply to workspace',()=>{remote.splice(remote.indexOf(b),1);lanes.push({name:n,color:'var(--line2)',up:0,commits:b.commits});toast('applied '+n);render()}),
+    I('⧉','Copy name',()=>toast('copied '+n)),'-',
+    I('✕','Delete branch',()=>{if(ap)unapply(lanes.findIndex(l=>l.name===n));const i=remote.findIndex(r=>r.n===n);if(i>=0)remote.splice(i,1);toast('deleted '+n);render()},{danger:1})]}}
+  if(stat)return{el:stat,title:stat.querySelector('.l').textContent,items:[I('⧉','Copy value',()=>toast('copied '+stat.querySelector('.v').textContent))]};
+  if(opt)return{el:opt,title:opt.querySelector('.t').textContent,items:[
+    I('↺','Reset to default',()=>toast('reset “'+opt.querySelector('.t').textContent+'”')),
+    I('?','What is this?',()=>toast(opt.querySelector('.d').textContent||'—'))]};
+  if(rb&&rb.dataset.page)return{el:rb,title:rb.title,items:[I('◉','Open '+rb.title,()=>go(rb.dataset.page))]};
+  return{el:null,title:pageMeta[page][0],items:[
+    I('↻','Fetch',()=>$('#fetch').click(),{sc:'⌘R'}),
+    I('＋','New branch',()=>$('#newBranch').click(),{sc:'⌘B'}),
+    I('↑','Push all',()=>$('#pushAll').click(),{sc:'⌘⇧P'}),'-',
+    {g:'Go to'},
+    I('▦','Workspace',()=>go('work'),{dis:page==='work'}),
+    I('⑂','Branches',()=>go('branches'),{dis:page==='branches'}),
+    I('⚙','Settings',()=>go('settings'),{dis:page==='settings'}),'-',
+    I('◐',S.theme==='dark'?'Light theme':'Dark theme',()=>$('#theme').click(),{sc:'⌘⇧L'})]};
+}
+function swapLane(a,b){
+  [lanes[a],lanes[b]]=[lanes[b],lanes[a]];
+  Object.keys(assign).forEach(p=>{if(assign[p]==='l'+a)assign[p]='l'+b;else if(assign[p]==='l'+b)assign[p]='l'+a});
+  render();
+}
+function hideMenu(){cm.classList.remove('show');if(ctxEl)ctxEl.classList.remove('ctx-hl');ctxEl=null}
+document.addEventListener('contextmenu',e=>{
+  if(e.target.closest('textarea,input'))return;
+  e.preventDefault();hideMenu();
+  const m=menuFor(e.target);
+  cm.innerHTML=`<div class="cm-h"><i></i><span>${esc(m.title)}</span></div>`+m.items.map((it,i)=>it==='-'?'<div class="cm-s"></div>':it.g?`<div class="cm-g">${it.g}</div>`:
+    `<button class="cm-i${it.danger?' danger':''}" data-i="${i}"${it.dis?' disabled':''}><span class="ic">${it.ic}</span><span class="lb">${esc(it.lb)}</span>${it.sc?`<span class="sc">${it.sc}</span>`:''}</button>`).join('');
+  $$('#cm .cm-i').forEach(b=>b.onclick=()=>{const f=m.items[+b.dataset.i].fn;hideMenu();f()});
+  ctxEl=m.el;if(ctxEl)ctxEl.classList.add('ctx-hl');
+  cm.style.left='0px';cm.style.top='0px';cm.classList.add('show');
+  const r=cm.getBoundingClientRect(),x=Math.min(e.clientX,innerWidth-r.width-8),y=Math.min(e.clientY,innerHeight-r.height-8);
+  cm.style.left=Math.max(8,x)+'px';cm.style.top=Math.max(8,y)+'px';
+  cm.style.transformOrigin=(x<e.clientX?'right':'left')+' '+(y<e.clientY?'bottom':'top');
+});
+document.addEventListener('mousedown',e=>{if(!e.target.closest('#cm'))hideMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideMenu()});
+addEventListener('blur',hideMenu);addEventListener('resize',hideMenu);
+document.addEventListener('scroll',hideMenu,true);
+
+applyPrefs();go('work');
+</script>
+</body>
+</html>
